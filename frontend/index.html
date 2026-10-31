@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Vaultory" />
+    <meta name="theme-color" content="#0B0B12" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F8FC" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- The landing page is public and indexable; authenticated routes are
+         unreachable to crawlers, so indexing stays safe. -->
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="author" content="Deepak" />
+    <meta
+      name="keywords"
+      content="password manager, secrets manager, encrypted vault, self-hosted password manager, end-to-end encryption, API key storage, zero knowledge"
+    />
+    <title>Vaultory - Encrypted Password &amp; Secrets Manager</title>
+    <meta
+      name="description"
+      content="Vaultory is a personal password and secrets manager. Logins, API keys, database credentials and files are encrypted in your browser before they are saved - the server never sees plaintext."
+    />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Vaultory" />
+    <meta property="og:title" content="Vaultory - Encrypted Password &amp; Secrets Manager" />
+    <meta
+      property="og:description"
+      content="Your secrets, encrypted in your browser before they leave it. Passwords, API keys, SSH credentials, files - one private vault."
+    />
+    <meta property="og:image" content="/logo.png" />
+    <meta property="og:locale" content="en_US" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Vaultory - Encrypted Password &amp; Secrets Manager" />
+    <meta
+      name="twitter:description"
+      content="Your secrets, encrypted in your browser before they leave it. One private vault for everything sensitive."
+    />
+    <meta name="twitter:image" content="/logo.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Vaultory",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "Web",
+        "description": "Personal password and secrets manager with browser-side AES-256-GCM encryption.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Deepak", "url": "https://github.com/phoenixdev100" }
+      }
+    </script>
+    <script>
+      // Apply the stored theme before first paint to avoid a flash of the wrong palette.
+      // Light is the default for first-time visitors.
+      (function () {
+        try {
+          var dark = localStorage.getItem('vaultory.theme') === 'dark';
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (error) {
+          /* storage unavailable - fall back to the light palette */
+        }
+      })();
+    </script>
+  </head>
+  <body class="h-full">
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

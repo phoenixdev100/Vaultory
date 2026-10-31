@@ -1,0 +1,251 @@
+@import 'tailwindcss';
+
+/* Class-based dark mode so the theme can be switched without a reload. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans:
+    'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, monospace;
+
+  /* Semantic surfaces - values come from the palettes below. */
+  --color-canvas: var(--vt-canvas);
+  --color-surface: var(--vt-surface);
+  --color-surface-muted: var(--vt-surface-muted);
+  --color-elevated: var(--vt-elevated);
+  --color-sidebar: var(--vt-sidebar);
+
+  --color-line: var(--vt-line);
+  --color-line-strong: var(--vt-line-strong);
+
+  --color-fg: var(--vt-fg);
+  --color-fg-muted: var(--vt-fg-muted);
+  --color-fg-subtle: var(--vt-fg-subtle);
+
+  --color-primary: var(--vt-primary);
+  --color-primary-hover: var(--vt-primary-hover);
+  --color-primary-fg: var(--vt-primary-fg);
+  --color-primary-soft: var(--vt-primary-soft);
+  --color-primary-line: var(--vt-primary-line);
+
+  --color-success: var(--vt-success);
+  --color-success-soft: var(--vt-success-soft);
+  --color-warning: var(--vt-warning);
+  --color-warning-soft: var(--vt-warning-soft);
+  --color-danger: var(--vt-danger);
+  --color-danger-hover: var(--vt-danger-hover);
+  --color-danger-soft: var(--vt-danger-soft);
+
+  --color-ring: var(--vt-primary);
+
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+
+  --shadow-subtle: 0 1px 2px 0 rgb(16 20 40 / 0.04), 0 1px 3px 0 rgb(16 20 40 / 0.06);
+  --shadow-card: 0 1px 2px 0 rgb(16 20 40 / 0.04), 0 8px 24px -12px rgb(16 20 40 / 0.12);
+  --shadow-pop: 0 12px 40px -12px rgb(16 20 40 / 0.22), 0 2px 8px -2px rgb(16 20 40 / 0.12);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Light palette - calm neutral canvas, restrained indigo accent. */
+:root {
+  --vt-canvas: #f7f8fc;
+  --vt-surface: #ffffff;
+  --vt-surface-muted: #f2f4fa;
+  --vt-elevated: #ffffff;
+  --vt-sidebar: #ffffff;
+
+  --vt-line: #e6e8f1;
+  --vt-line-strong: #d3d8e6;
+
+  --vt-fg: #0e1020;
+  --vt-fg-muted: #5d6381;
+  --vt-fg-subtle: #8b90a7;
+
+  --vt-primary: #4f46e5;
+  --vt-primary-hover: #4338ca;
+  --vt-primary-fg: #ffffff;
+  --vt-primary-soft: #eef0fe;
+  --vt-primary-line: #d9dcfb;
+
+  --vt-success: #15803d;
+  --vt-success-soft: #e8f7ee;
+  --vt-warning: #b45309;
+  --vt-warning-soft: #fdf3e3;
+  --vt-danger: #dc2626;
+  --vt-danger-hover: #b91c1c;
+  --vt-danger-soft: #fdeceb;
+
+  color-scheme: light;
+}
+
+/* Dark palette - true black foundation with layered near-black surfaces. */
+.dark {
+  --vt-canvas: #090909;
+  --vt-surface: #121216;
+  --vt-surface-muted: #17171c;
+  --vt-elevated: #1b1b21;
+  --vt-sidebar: #0d0d10;
+
+  --vt-line: #26262e;
+  --vt-line-strong: #35353f;
+
+  --vt-fg: #f2f3f8;
+  --vt-fg-muted: #a0a5bb;
+  --vt-fg-subtle: #73788e;
+
+  --vt-primary: #818cf8;
+  --vt-primary-hover: #9aa3ff;
+  --vt-primary-fg: #0b0b14;
+  --vt-primary-soft: #1a1b2e;
+  --vt-primary-line: #2b2d4d;
+
+  --vt-success: #4ade80;
+  --vt-success-soft: #10231a;
+  --vt-warning: #fbbf24;
+  --vt-warning-soft: #241c0c;
+  --vt-danger: #f87171;
+  --vt-danger-hover: #fca5a5;
+  --vt-danger-soft: #2a1414;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Theme switching should feel instant but not jarring. */
+    transition:
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-primary) 22%, transparent);
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-fg-subtle);
+    background-clip: content-box;
+  }
+}
+
+/* Radix-driven enter/exit animations for popovers, menus, selects, tooltips.
+   Radix waits for these animations before unmounting, so exits are visible. */
+@keyframes vt-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes vt-pop-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@layer components {
+  .vt-pop[data-state='open'],
+  .vt-pop[data-state='delayed-open'] {
+    animation: vt-pop-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .vt-pop[data-state='closed'] {
+    animation: vt-pop-out 110ms ease-in;
+  }
+}
+
+@layer utilities {
+  /* Dotted backdrop used by the landing hero. */
+  .bg-dot-grid {
+    background-image: radial-gradient(color-mix(in oklab, var(--color-fg) 12%, transparent) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-muted) 25%,
+      color-mix(in oklab, var(--color-surface-muted) 55%, var(--color-line)) 50%,
+      var(--color-surface-muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+}
+
+/* Honour the operating system's reduced-motion setting everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
