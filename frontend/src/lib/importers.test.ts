@@ -3,7 +3,7 @@ import { BACKUP_FORMAT, parseBackup, parsePasswordCsv, type VaultBackup } from '
 
 describe('parsePasswordCsv', () => {
   it('parses a Chrome-style export', () => {
-    const csv = 'name,url,username,password,note\nGitHub,https://github.com,me@x.dev,s3cret,work\n\n';
+    const csv = 'name,url,username,password,note\nGitHub,https://github.com,me@x.dev,csv-fixture-1,work\n\n';
     const result = parsePasswordCsv(csv);
     expect(result).not.toHaveProperty('error');
     const parsed = result as Extract<typeof result, { items: unknown[] }>;
@@ -13,7 +13,7 @@ describe('parsePasswordCsv', () => {
     expect(parsed.items[0]!.payload.fields).toEqual({
       url: 'https://github.com',
       username: 'me@x.dev',
-      password: 's3cret',
+      password: 'csv-fixture-1',
     });
   });
 

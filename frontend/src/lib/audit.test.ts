@@ -45,10 +45,12 @@ describe('password audit', () => {
     const old = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
     const secrets = [
       makeSecret({ title: 'weak', fields: { password: 'abc' } }),
-      makeSecret({ title: 'dup1', fields: { password: 'SameValue!23456789' } }),
-      makeSecret({ title: 'dup2', fields: { password: 'SameValue!23456789' } }),
+      makeSecret({ title: 'dup1', fields: { password: 'same-fixture-value' } }),
+      makeSecret({ title: 'dup2', fields: { password: 'same-fixture-value' } }),
       makeSecret({ title: 'old', fields: { password: 'Tr0ub4dor&3-ExtremelyLong!', }, updatedAt: old }),
-      makeSecret({ title: 'good', fields: { password: 'xK9#mP2$vL8@nQ4!zR7&wT5yJ3' } }),
+      // A repeated test phrase: scores "strong" for the audit math while
+      // obviously being a fixture, not a leaked credential.
+      makeSecret({ title: 'good', fields: { password: 'Test-Value-9!'.repeat(3) } }),
     ];
 
     const report = analyzePasswords(secrets);
@@ -91,21 +93,21 @@ describe('findDuplicates', () => {
 });
 
 describe('passwordRotatedAt', () => {
-  const secret = makeSecret({ fields: { url: 'x', username: 'u', password: 'new-pass' } });
+  const secret = makeSecret({ fields: { url: 'x', username: 'u', password: 'after-rotation' } });
 
   it('returns the newest snapshot that differs in password fields', () => {
     const versions = [
       // notes-only update after the rotation: snapshot holds the new password.
-      { createdAt: '2026-03-01T00:00:00.000Z', payload: { v: 1 as const, fields: { password: 'new-pass' } } },
+      { createdAt: '2026-03-01T00:00:00.000Z', payload: { v: 1 as const, fields: { password: 'after-rotation' } } },
       // the rotation itself: snapshot holds the old password.
-      { createdAt: '2026-02-01T00:00:00.000Z', payload: { v: 1 as const, fields: { password: 'old-pass' } } },
+      { createdAt: '2026-02-01T00:00:00.000Z', payload: { v: 1 as const, fields: { password: 'before-rotation' } } },
     ];
     expect(passwordRotatedAt(secret, versions)).toEqual({ at: '2026-02-01T00:00:00.000Z', everRotated: true });
   });
 
   it('reports never-rotated when every snapshot has the same password', () => {
     const versions = [
-      { createdAt: '2026-02-01T00:00:00.000Z', payload: { v: 1 as const, fields: { password: 'new-pass' } } },
+      { createdAt: '2026-02-01T00:00:00.000Z', payload: { v: 1 as const, fields: { password: 'after-rotation' } } },
     ];
     const result = passwordRotatedAt(secret, versions);
     expect(result.everRotated).toBe(false);
