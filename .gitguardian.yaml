@@ -1,0 +1,7 @@
+# Test suites intentionally carry fabricated credential fixtures.
+# They are not real secrets and must not be flagged.
+paths-ignore:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "backend/tests/**"
+  - "frontend/e2e/**"
