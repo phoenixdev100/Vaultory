@@ -37,12 +37,29 @@ export function setCsrfToken(token: string | null): void {
 /**
  * Session token for Bearer auth. Used in cross-site deployments where
  * SameSite=None cookies are blocked by the browser (ITP / third-party cookie
- * restrictions). Kept in memory only - never persisted to storage.
+ * restrictions).
+ *
+ * Stored in sessionStorage so it survives page refreshes but is automatically
+ * cleared when the tab/browser is closed — a reasonable balance between UX
+ * and security for a password manager.
  */
+const BEARER_TOKEN_KEY = 'vaultory.session_token';
+
 let bearerToken: string | null = null;
+try {
+  bearerToken = sessionStorage.getItem(BEARER_TOKEN_KEY);
+} catch {
+  bearerToken = null;
+}
 
 export function setBearerToken(token: string | null): void {
   bearerToken = token;
+  try {
+    if (token) sessionStorage.setItem(BEARER_TOKEN_KEY, token);
+    else sessionStorage.removeItem(BEARER_TOKEN_KEY);
+  } catch {
+    /* storage unavailable */
+  }
 }
 
 const WORKSPACE_STORAGE_KEY = 'vaultory.workspace';
