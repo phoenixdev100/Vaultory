@@ -1,0 +1,17 @@
+# Vaultory - the landing page is public; authenticated vault routes
+# are unreachable to crawlers (they require a session cookie).
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Authenticated app areas - nothing a crawler could render anyway,
+# but listed so they never get indexed if a preview leaks out.
+Disallow: /dashboard
+Disallow: /vault
+Disallow: /folders
+Disallow: /security
+Disallow: /settings
+Disallow: /trash
+Disallow: /audit
+Disallow: /activity
+Disallow: /sharing
