@@ -1,0 +1,13 @@
+# Dependencies (vendor/ is intentionally committed - never ignore it)
+node_modules/
+
+# Logs & temp
+*.log
+tmp/
+.tmp/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
