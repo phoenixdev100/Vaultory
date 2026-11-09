@@ -168,26 +168,25 @@ Create an account at `http://localhost:5173/signup`. Your password never leaves 
 </div>
 
 ```bash
-cp .env.docker.example .env   # set SESSION_SECRET / VAULT_WRAP_SECRET / POSTGRES_PASSWORD
-docker compose up -d --build
+docker compose pull    # phoenixdev100/vaultory-{backend,frontend}
+docker compose up -d   # no .env needed - every value has a baked-in default
 ```
 
-Then open **http://localhost:8080**
+Then open **http://localhost:5173**
 
 ```mermaid
 flowchart LR
     subgraph COMPOSE["docker compose"]
-        W["🌐 web<br/>nginx :8080"] -->|"/api proxy"| A["⚙️ api<br/>Express :4000"]
-        M["📦 migrate<br/>one-shot"] --> D
-        A --> D[("🐘 postgres:17<br/>pgdata volume")]
+        W["🌐 web<br/>nginx :5173"] -->|"/api proxy"| A["⚙️ api<br/>Express :4000"]
+        A -->|"migrate deploy<br/>at boot"| D[("🐘 postgres:17<br/>pgdata volume")]
     end
-    U["👤 you"] -->|localhost:8080| W
+    U["👤 you"] -->|localhost:5173| W
 
     classDef accent fill:#ddf4ff,stroke:#54aeff,color:#0969da
     class A,D accent
 ```
 
-- `migrate` applies the schema before `api` starts (`service_completed_successfully`)
+- `api` applies the schema at boot (`prisma migrate deploy`, idempotent) after Postgres is healthy
 - Data persists in the `pgdata` volume - `down` keeps it, `down -v` wipes it
 - Generate secrets: `openssl rand -base64 48` · enable email: `EMAIL_TRANSPORT=smtp` + `SMTP_*`
 
@@ -220,7 +219,7 @@ backend/api/      Vercel serverless handler (api/index.ts)
 frontend/         React 19 + Vite + Tailwind v4 app, PWA config, e2e suite
 extension/        MV3 browser extension (vault list, copy, autofill)
 docs/             security.md · deployment.md
-docker-compose.yml  Self-hosted stack (db + migrate + api + web/nginx)
+docker-compose.yml  Self-hosted stack (db + api + web/nginx; api migrates at boot)
 ```
 
 ---
