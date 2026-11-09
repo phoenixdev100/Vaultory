@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Vaultory",
+  "version": "1.0.0",
+  "description": "Unlock your Vaultory vault and autofill logins. Secrets decrypt locally in the extension.",
+  "icons": { "128": "icon.png", "48": "icon.png", "16": "icon.png" },
+  "action": {
+    "default_popup": "app.html",
+    "default_title": "Vaultory"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "tabs", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}
