@@ -63,7 +63,7 @@ export function createApp(): Express {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization', 'X-Workspace-Id'],
       maxAge: 600,
     }),
   );
