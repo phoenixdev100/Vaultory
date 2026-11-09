@@ -62,6 +62,10 @@ export function setBearerToken(token: string | null): void {
   }
 }
 
+export function getBearerToken(): string | null {
+  return bearerToken;
+}
+
 const WORKSPACE_STORAGE_KEY = 'vaultory.workspace';
 
 /**
