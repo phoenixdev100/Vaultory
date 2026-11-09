@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthContext, type AuthContextValue, type AuthStatus } from '@/features/auth/auth-context';
-import { api, setActiveWorkspaceId, setCsrfToken, UNAUTHORIZED_EVENT } from '@/lib/api';
+import { api, setActiveWorkspaceId, setBearerToken, setCsrfToken, UNAUTHORIZED_EVENT } from '@/lib/api';
 import type { MeResponse, UserDto } from '@/types/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -11,6 +11,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearSession = useCallback(() => {
     setCsrfToken(null);
+    setBearerToken(null);
     // Drop the workspace scope too - the next account's requests must never
     // carry a workspace id that belongs to the previous user.
     setActiveWorkspaceId(null);
@@ -21,8 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('anonymous');
   }, [queryClient]);
 
-  const setSession = useCallback((nextUser: UserDto, csrfToken: string) => {
+  const setSession = useCallback((nextUser: UserDto, csrfToken: string, sessionToken?: string) => {
     setCsrfToken(csrfToken);
+    if (sessionToken) setBearerToken(sessionToken);
     setUser(nextUser);
     setStatus('authenticated');
   }, []);

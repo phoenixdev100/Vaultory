@@ -7,7 +7,7 @@ export interface AuthContextValue {
   status: AuthStatus;
   user: UserDto | null;
   /** Called after signup/login once the server has issued a session. */
-  setSession: (user: UserDto, csrfToken: string) => void;
+  setSession: (user: UserDto, csrfToken: string, sessionToken?: string) => void;
   /** Replaces the cached user after a profile or password change. */
   updateUser: (user: UserDto) => void;
   refresh: () => Promise<void>;

@@ -185,6 +185,9 @@ export interface SessionDto {
 export interface AuthResponse {
   user: UserDto;
   csrfToken: string;
+  /** Raw session token returned by the server. Used as Bearer auth in
+   *  cross-site deployments where third-party cookies are blocked. */
+  sessionToken: string;
 }
 
 /** /auth/login answers either a session or a TOTP challenge. */

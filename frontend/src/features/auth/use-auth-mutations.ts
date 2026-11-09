@@ -45,7 +45,7 @@ export function useLogin() {
     },
     onSuccess: (result) => {
       if (result.mfa) return;
-      setSession(result.response.user, result.response.csrfToken);
+      setSession(result.response.user, result.response.csrfToken, result.response.sessionToken);
       adoptKey(result.vaultKey);
     },
   });
@@ -71,7 +71,7 @@ export function useLoginMfa() {
       return { response, vaultKey };
     },
     onSuccess: ({ response, vaultKey }) => {
-      setSession(response.user, response.csrfToken);
+      setSession(response.user, response.csrfToken, response.sessionToken);
       adoptKey(vaultKey);
     },
   });
@@ -105,7 +105,7 @@ export function useSignup() {
       return { response, vaultKey };
     },
     onSuccess: ({ response, vaultKey }) => {
-      setSession(response.user, response.csrfToken);
+      setSession(response.user, response.csrfToken, response.sessionToken);
       adoptKey(vaultKey);
     },
   });

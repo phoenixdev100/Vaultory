@@ -34,6 +34,17 @@ export function setCsrfToken(token: string | null): void {
   csrfToken = token;
 }
 
+/**
+ * Session token for Bearer auth. Used in cross-site deployments where
+ * SameSite=None cookies are blocked by the browser (ITP / third-party cookie
+ * restrictions). Kept in memory only - never persisted to storage.
+ */
+let bearerToken: string | null = null;
+
+export function setBearerToken(token: string | null): void {
+  bearerToken = token;
+}
+
 const WORKSPACE_STORAGE_KEY = 'vaultory.workspace';
 
 /**
@@ -91,6 +102,9 @@ async function request<T>(method: string, path: string, options: RequestOptions 
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (csrfToken && method !== 'GET') headers['X-CSRF-Token'] = csrfToken;
   if (workspaceId) headers['X-Workspace-Id'] = workspaceId;
+  // Cross-site deployments: third-party cookies are blocked in many browsers,
+  // so fall back to Bearer auth when we have an in-memory session token.
+  if (bearerToken) headers['Authorization'] = `Bearer ${bearerToken}`;
 
   let response: Response;
   try {
