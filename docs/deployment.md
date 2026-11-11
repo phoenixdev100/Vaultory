@@ -66,7 +66,7 @@ Create a Vercel project with **root directory `backend/`**.
   DIRECT_URL=...direct...
   SESSION_SECRET=<openssl rand -base64 48>
   VAULT_WRAP_SECRET=<openssl rand -base64 48>  # escrow key for reset recovery - back it up; rotating orphans escrowed keys
-  SESSION_TTL_DAYS=30
+  SESSION_TTL_DAYS=7
   AUTO_LOCK_MINUTES=15          # default for new accounts; users can override (0-480)
   APP_URL=https://<web-project-domain>
   CORS_ORIGINS=https://<web-project-domain>

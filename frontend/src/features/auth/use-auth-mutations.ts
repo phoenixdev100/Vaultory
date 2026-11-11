@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { DEFAULT_KDF, deriveAccountKeys, type KdfParams } from '@/lib/crypto/kdf';
 import { createResetExchange, escrowVaultKeyForServer } from '@/lib/crypto/escrow';
 import { createVaultKey, unwrapVaultKey, wrapVaultKey } from '@/lib/crypto/vault';
+import { persistVaultKey } from '@/lib/crypto/key-store';
 import type { AuthResponse, KdfParamsDto, LoginResponse, SessionDto, UserDto } from '@/types/api';
 
 export interface Credentials {
@@ -41,6 +42,11 @@ export function useLogin() {
       }
 
       const vaultKey = await unwrapVaultKey(response.user.wrappedVaultKey, wrappingKey);
+      // Persist must complete before the mutation resolves, otherwise the vault
+      // provider's restore probe won't find the key on navigation.
+      if (response.user.id) {
+        await persistVaultKey(response.user.id, vaultKey);
+      }
       return { mfa: false as const, response, vaultKey };
     },
     onSuccess: (result) => {
@@ -68,6 +74,9 @@ export function useLoginMfa() {
     }) => {
       const response = await api.post<AuthResponse>('/auth/login/mfa', { mfaToken, code });
       const vaultKey = await unwrapVaultKey(response.user.wrappedVaultKey, wrappingKey);
+      if (response.user.id) {
+        await persistVaultKey(response.user.id, vaultKey);
+      }
       return { response, vaultKey };
     },
     onSuccess: ({ response, vaultKey }) => {
@@ -102,6 +111,9 @@ export function useSignup() {
         ...(website ? { website } : {}),
       });
 
+      if (response.user.id) {
+        await persistVaultKey(response.user.id, vaultKey);
+      }
       return { response, vaultKey };
     },
     onSuccess: ({ response, vaultKey }) => {

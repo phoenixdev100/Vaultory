@@ -134,7 +134,14 @@ export async function unlockWithPasskey(passkey: PasskeyDto): Promise<CryptoKey>
     publicKey: {
       challenge: randomBytes(32) as BufferSource,
       allowCredentials: [
-        { type: 'public-key', id: base64urlToBytes(passkey.credentialId) as BufferSource },
+        {
+          type: 'public-key',
+          id: base64urlToBytes(passkey.credentialId) as BufferSource,
+          // Request only the platform authenticator - this skips the OS
+          // "Choose a passkey" dialog and directly invokes Windows Hello,
+          // Touch ID or Android biometrics.
+          transports: ['internal'],
+        },
       ],
       userVerification: 'required',
       extensions: { prf: { eval: { first: salt as BufferSource } } },

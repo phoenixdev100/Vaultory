@@ -23,6 +23,12 @@ import { formatRelative } from '@/lib/format';
 import { cn, copyToClipboard } from '@/lib/utils';
 import type { DecryptedSecret, FolderDto } from '@/types/api';
 
+interface SecretSelection {
+  selected: ReadonlySet<string>;
+  onToggle: (id: string) => void;
+  onToggleAll: () => void;
+}
+
 interface SecretListProps {
   secrets: DecryptedSecret[];
   folders: FolderDto[];
@@ -31,6 +37,7 @@ interface SecretListProps {
   onToggleFavorite?: (secret: DecryptedSecret) => void;
   onMove?: (secret: DecryptedSecret, folderId: string | null) => void;
   onDelete?: (secret: DecryptedSecret) => void;
+  selection?: SecretSelection;
 }
 
 export function SecretList({
@@ -41,6 +48,7 @@ export function SecretList({
   onToggleFavorite,
   onMove,
   onDelete,
+  selection,
 }: SecretListProps) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
@@ -89,6 +97,17 @@ export function SecretList({
       <table className="w-full table-fixed border-collapse text-left">
         <thead className="hidden border-b border-line bg-surface-muted/60 sm:table-header-group">
           <tr className="text-[11px] font-semibold tracking-wide text-fg-subtle uppercase">
+            {selection ? (
+              <th scope="col" className="w-10 px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={secrets.length > 0 && secrets.every((s) => selection.selected.has(s.id))}
+                  onChange={selection.onToggleAll}
+                  aria-label="Select all items"
+                />
+              </th>
+            ) : null}
             <th scope="col" className="px-4 py-2.5 font-semibold">
               Name
             </th>
@@ -127,8 +146,19 @@ export function SecretList({
                   if (!event.currentTarget.contains(target) || target.closest('a,button')) return;
                   void navigate(`/vault/${secret.id}`);
                 }}
-                className="group cursor-pointer transition-colors hover:bg-surface-muted/60"
+                className={cn('group cursor-pointer transition-colors hover:bg-surface-muted/60', selection?.selected.has(secret.id) && 'bg-primary-soft/40')}
               >
+                {selection ? (
+                  <td className="px-3 py-2.5" onClick={(event) => event.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-primary"
+                      checked={selection.selected.has(secret.id)}
+                      onChange={() => selection.onToggle(secret.id)}
+                      aria-label={`Select ${secret.title}`}
+                    />
+                  </td>
+                ) : null}
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-3">
                     <span

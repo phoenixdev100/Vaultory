@@ -100,7 +100,7 @@ Login favicons are fetched through `/api/meta/favicon?domain=…` (authenticated
 
 ## Session & transport security
 
-- Session cookie `vaultory_session`: `HttpOnly`, `Secure` in production, `SameSite=Lax` (or `None` when `CROSS_SITE_COOKIES=true`), 30-day sliding expiry.
+- Session cookie `vaultory_session`: `HttpOnly`, `Secure` in production, `SameSite=Lax` (or `None` when `CROSS_SITE_COOKIES=true`), 7-day expiry.
 - Only an **HMAC hash** of the token is stored - a database leak does not leak usable sessions. Sessions can be listed and individually revoked; password change can revoke all others.
 - Sessions carry a coarse `ipLabel` (last octet dropped) and an optional ISO alpha-2 `country` taken from the edge geo header (`x-vercel-ip-country`, `cf-ipcountry` fallback) - nothing finer is stored and no third-party geo lookup happens; bogus values are normalised to null. This powers the dashboard sign-in map and only exists for sessions created after the column shipped.
 - **Email verification gate**: when `REQUIRE_EMAIL_VERIFICATION=true` (the default), `requireVerifiedEmail` blocks every vault/security route (`secrets`, `folders`, `shares`, `emergency`, `activity`, `dashboard`, `meta`, `settings` protected ops, `account/passkeys`) with `403 email_not_verified` until `emailVerifiedAt` is set. Sign-up still succeeds and the user stays signed in - they can only verify (via the emailed link or the authenticated 6-digit code endpoint) and resend the email. In production the flag requires a real mail transport; `EMAIL_TRANSPORT=console` + required verification is rejected at boot. The console transport returns `previewUrl`/`previewCode` so the flow is testable locally without sending mail.

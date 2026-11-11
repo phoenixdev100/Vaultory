@@ -20,7 +20,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { ViewModeToggle } from '@/components/ui/view-toggle';
 import { CreateFolderDialog } from '@/features/folders/create-folder-dialog';
-import { useDeleteFolder, useFolders, useUpdateFolder } from '@/features/folders/queries';
+import {
+  useBulkDeleteFolders,
+  useBulkMoveFolders,
+  useDeleteFolder,
+  useFolders,
+  useUpdateFolder,
+} from '@/features/folders/queries';
 import { flattenFolderTree, folderPath, folderSubtreeIds, type TreeFolder } from '@/features/folders/tree';
 import { ApiError } from '@/lib/api';
 import { formatRelative, pluralize } from '@/lib/format';
@@ -45,6 +51,13 @@ export default function FoldersPage() {
   const [editParentId, setEditParentId] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [deleteStrategy, setDeleteStrategy] = useState<'detach' | 'delete-secrets'>('detach');
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+  const [bulkParentId, setBulkParentId] = useState<string>('root');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteStrategy, setBulkDeleteStrategy] = useState<'detach' | 'delete-secrets'>('detach');
+  const bulkMove = useBulkMoveFolders();
+  const bulkDelete = useBulkDeleteFolders();
 
   const items = useMemo(() => folders.data?.items ?? [], [folders.data]);
   const tree = useMemo(() => flattenFolderTree(items), [items]);
@@ -150,6 +163,67 @@ export default function FoldersPage() {
     </DropdownMenu>
   );
 
+  const selectedFolders = items.filter((folder) => selectedIds.has(folder.id));
+  const bulkBusy = bulkMove.isPending || bulkDelete.isPending;
+
+  function toggleFolder(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function submitBulkMove() {
+    bulkMove.mutate(
+      { ids: [...selectedIds], parentId: bulkParentId === 'root' ? null : bulkParentId },
+      {
+        onSuccess: (result) => {
+          toast.success(`${pluralize(result.updated, 'folder')} moved`);
+          setBulkMoveOpen(false);
+          setSelectedIds(new Set());
+        },
+        onError: (error) =>
+          toast.error('Could not move the folders', {
+            description: error instanceof ApiError ? error.message : undefined,
+          }),
+      },
+    );
+  }
+
+  function submitBulkDelete() {
+    bulkDelete.mutate(
+      { ids: [...selectedIds], strategy: bulkDeleteStrategy },
+      {
+        onSuccess: (result) => {
+          const parts: string[] = [];
+          if (result.deletedSecrets > 0) {
+            parts.push(`${result.deletedSecrets} ${result.deletedSecrets === 1 ? 'item was' : 'items were'} permanently deleted`);
+          }
+          toast.success(`${pluralize(result.deleted, 'folder')} deleted`, { description: parts.join('. ') || undefined });
+          setBulkDeleteOpen(false);
+          setSelectedIds(new Set());
+        },
+        onError: (error) =>
+          toast.error('Could not delete the folders', {
+            description: error instanceof ApiError ? error.message : undefined,
+          }),
+      },
+    );
+  }
+
+  const folderCheckbox = (folder: FolderDto) => (
+    <input
+      type="checkbox"
+      className="size-4 shrink-0 accent-primary"
+      checked={selectedIds.has(folder.id)}
+      onChange={() => toggleFolder(folder.id)}
+      onClick={(event) => event.stopPropagation()}
+      aria-label={`Select ${folder.name}`}
+    />
+  );
+
   const folderIcon = (size: 'md' | 'sm' = 'md') => (
     <span
       className={cn(
@@ -230,6 +304,7 @@ export default function FoldersPage() {
                     className="group flex flex-col rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-subtle transition-colors hover:border-line-strong"
                   >
                     <div className="flex items-center gap-3">
+                      {folderCheckbox(folder)}
                       <Link
                         to={`/vault?folder=${folder.id}`}
                         className="flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none"
@@ -275,6 +350,24 @@ export default function FoldersPage() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface shadow-subtle">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-line bg-surface-muted/60">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={items.length > 0 && items.every((folder) => selectedIds.has(folder.id))}
+                onChange={() =>
+                  setSelectedIds((current) =>
+                    items.every((folder) => current.has(folder.id))
+                      ? new Set()
+                      : new Set(items.map((folder) => folder.id)),
+                  )
+                }
+                aria-label="Select all folders"
+              />
+              <span className="text-[11px] font-semibold text-fg-subtle uppercase tracking-wide">
+                Folders
+              </span>
+            </div>
             <ul className="flex flex-col divide-y divide-line">
               {tree.map(({ folder, depth }) => (
                 <li
@@ -282,6 +375,7 @@ export default function FoldersPage() {
                   className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-muted/60"
                   style={{ paddingLeft: `${depth * 22 + 16}px` }}
                 >
+                  {folderCheckbox(folder)}
                   <Link
                     to={`/vault?folder=${folder.id}`}
                     className="flex min-w-0 flex-1 items-center gap-3 rounded-md focus-visible:outline-none"
@@ -470,6 +564,130 @@ export default function FoldersPage() {
             </Badge>
           </div>
         ) : null}
+      </ConfirmDialog>
+
+      {selectedFolders.length > 0 ? (
+        <div className="sticky bottom-4 z-30 flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border border-line bg-surface px-3 py-2.5 shadow-card">
+          <span className="px-1 text-[13px] font-medium text-fg">
+            {pluralize(selectedFolders.length, 'folder')} selected
+          </span>
+          <div className="mx-1 h-5 w-px bg-line" />
+          <Button size="sm" variant="secondary" onClick={() => setBulkMoveOpen(true)} disabled={bulkBusy}>
+            <FolderPlus />
+            Move under
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="text-danger"
+            onClick={() => {
+              setBulkDeleteStrategy('detach');
+              setBulkDeleteOpen(true);
+            }}
+            disabled={bulkBusy}
+          >
+            <Trash2 />
+            Delete
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto"
+            onClick={() => setSelectedIds(new Set())}
+            disabled={bulkBusy}
+            aria-label="Clear selection"
+          >
+            Clear
+          </Button>
+        </div>
+      ) : null}
+
+      <AnimatedDialog open={bulkMoveOpen} onOpenChange={setBulkMoveOpen}>
+        <DialogContent
+          title={`Move ${pluralize(selectedFolders.length, 'folder')}`}
+          description="Pick the folder they should live inside. Folders already inside the selection cannot be targets."
+          footer={
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setBulkMoveOpen(false)} disabled={bulkBusy}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={submitBulkMove} loading={bulkMove.isPending}>
+                Move
+              </Button>
+            </>
+          }
+        >
+          <Field>
+            <Label htmlFor="bulk-folder-parent">Inside folder</Label>
+            <Select value={bulkParentId} onValueChange={setBulkParentId}>
+              <SelectTrigger id="bulk-folder-parent">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="root">Top level</SelectItem>
+                {(() => {
+                  const blocked = new Set<string>();
+                  for (const id of selectedIds) {
+                    for (const sub of folderSubtreeIds(id, items)) blocked.add(sub);
+                  }
+                  return tree
+                    .filter(({ folder }) => !blocked.has(folder.id))
+                    .map(({ folder, depth }) => (
+                      <SelectItem key={folder.id} value={folder.id}>
+                        {'  '.repeat(depth * 2)}
+                        {folderPath(folder, byId)}
+                      </SelectItem>
+                    ));
+                })()}
+              </SelectContent>
+            </Select>
+          </Field>
+        </DialogContent>
+      </AnimatedDialog>
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={`Delete ${pluralize(selectedFolders.length, 'folder')}?`}
+        description="Subfolders are kept and moved up a level. Choose what should happen to the secrets inside."
+        confirmLabel="Delete folders"
+        destructive
+        loading={bulkDelete.isPending}
+        onConfirm={submitBulkDelete}
+      >
+        <div className="flex flex-col gap-2">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-control)] border border-line px-3 py-2.5 has-checked:border-primary has-checked:bg-primary-soft/40">
+            <input
+              type="radio"
+              name="bulk-delete-strategy"
+              checked={bulkDeleteStrategy === 'detach'}
+              onChange={() => setBulkDeleteStrategy('detach')}
+              className="mt-0.5 accent-primary"
+            />
+            <span className="text-[13px] leading-5 text-fg">
+              <span className="font-medium">Keep the items</span>
+              <span className="block text-fg-muted">They are moved to “No folder” and stay in your vault.</span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-[var(--radius-control)] border border-line px-3 py-2.5 has-checked:border-danger has-checked:bg-danger-soft/40">
+            <input
+              type="radio"
+              name="bulk-delete-strategy"
+              checked={bulkDeleteStrategy === 'delete-secrets'}
+              onChange={() => setBulkDeleteStrategy('delete-secrets')}
+              className="mt-0.5 accent-danger"
+            />
+            <span className="text-[13px] leading-5 text-fg">
+              <span className="font-medium text-danger">Delete the items too</span>
+              <span className="block text-fg-muted">
+                Every encrypted item inside the selected folders is permanently removed.
+              </span>
+            </span>
+          </label>
+          <Badge variant="neutral" size="sm" className="w-fit">
+            This choice cannot be undone
+          </Badge>
+        </div>
       </ConfirmDialog>
     </div>
   );

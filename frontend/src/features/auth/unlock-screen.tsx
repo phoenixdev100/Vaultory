@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Fingerprint, Lock, LogOut, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Logo } from '@/components/layout/logo';
@@ -35,9 +35,11 @@ export function UnlockScreen() {
     enabled: passkeySupported(),
     retry: false,
   });
-  const enrolled = passkeys.data?.passkeys ?? [];
+  const enrolled = useMemo(() => passkeys.data?.passkeys ?? [], [passkeys.data]);
+  // One auto-attempt per mount; the OS still shows its own confirmation.
+  const autoPasskeyTried = useRef(false);
 
-  async function handlePasskey() {
+  const handlePasskey = useCallback(async () => {
     setError(null);
     setPasskeyBusy(true);
     try {
@@ -56,7 +58,16 @@ export function UnlockScreen() {
     } finally {
       setPasskeyBusy(false);
     }
-  }
+  }, [enrolled, adoptKey]);
+
+  // Auto-unlock: once enrolled passkeys are known, fire the assertion without
+  // waiting for a button click. A cancelled/failed prompt falls back to the
+  // password field below.
+  useEffect(() => {
+    if (autoPasskeyTried.current || enrolled.length === 0) return;
+    autoPasskeyTried.current = true;
+    void handlePasskey();
+  }, [enrolled.length, handlePasskey]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -135,16 +146,23 @@ export function UnlockScreen() {
           </Button>
 
           {enrolled.length > 0 ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              loading={passkeyBusy}
-              onClick={() => void handlePasskey()}
-            >
-              <Fingerprint />
-              Unlock with passkey
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                loading={passkeyBusy}
+                onClick={() => void handlePasskey()}
+              >
+                <Fingerprint />
+                Unlock with passkey
+              </Button>
+              {passkeyBusy ? (
+                <p className="text-center text-xs text-fg-subtle">
+                  Confirm with your passkey or device PIN to continue…
+                </p>
+              ) : null}
+            </>
           ) : null}
 
           <div className="flex items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface-muted/60 px-3 py-2.5">

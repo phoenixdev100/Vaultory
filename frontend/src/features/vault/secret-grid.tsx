@@ -24,6 +24,11 @@ import { cn, copyToClipboard } from '@/lib/utils';
 import type { DecryptedSecret, FolderDto } from '@/types/api';
 import type { ReactNode } from 'react';
 
+interface SecretSelection {
+  selected: ReadonlySet<string>;
+  onToggle: (id: string) => void;
+}
+
 interface SecretGridProps {
   secrets: DecryptedSecret[];
   folders: FolderDto[];
@@ -32,6 +37,7 @@ interface SecretGridProps {
   onToggleFavorite?: (secret: DecryptedSecret) => void;
   onMove?: (secret: DecryptedSecret, folderId: string | null) => void;
   onDelete?: (secret: DecryptedSecret) => void;
+  selection?: SecretSelection;
 }
 
 /** Card layout alternative to the vault table - same actions, larger targets. */
@@ -43,6 +49,7 @@ export function SecretGrid({
   onToggleFavorite,
   onMove,
   onDelete,
+  selection,
 }: SecretGridProps) {
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
@@ -101,8 +108,21 @@ export function SecretGrid({
             initial={reduceMotion ? false : { opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.16, delay: reduceMotion ? 0 : Math.min(index * 0.02, 0.25) }}
-            className="group flex flex-col rounded-[var(--radius-card)] border border-line bg-surface p-4 shadow-subtle transition-colors hover:border-line-strong"
+            className={cn(
+              'group relative flex flex-col rounded-[var(--radius-card)] border bg-surface p-4 shadow-subtle transition-colors hover:border-line-strong',
+              selection?.selected.has(secret.id) ? 'border-primary bg-primary-soft/30' : 'border-line',
+            )}
           >
+            {selection ? (
+              <input
+                type="checkbox"
+                className="absolute top-3 right-3 size-4 accent-primary"
+                checked={selection.selected.has(secret.id)}
+                onChange={() => selection.onToggle(secret.id)}
+                aria-label={`Select ${secret.title}`}
+                onClick={(event) => event.stopPropagation()}
+              />
+            ) : null}
             <div className="flex items-start gap-3">
               <span
                 className={cn(

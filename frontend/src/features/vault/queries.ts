@@ -281,6 +281,44 @@ export function useMoveSecret() {
   });
 }
 
+/**
+ * Bulk refile / favourite / cross-organisation move. Only row metadata is
+ * sent - ciphertext never leaves the browser for these operations.
+ */
+export function useBulkUpdateSecrets() {
+  const invalidate = useInvalidateVault();
+
+  return useMutation({
+    mutationFn: (body: {
+      ids: string[];
+      folderId?: string | null;
+      workspaceId?: string;
+      isFavorite?: boolean;
+    }) => api.patch<{ updated: number }>('/secrets/bulk', body),
+    onSuccess: invalidate,
+  });
+}
+
+/** Bulk soft-delete - every selected item lands in the trash. */
+export function useBulkDeleteSecrets() {
+  const invalidate = useInvalidateVault();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => api.delete<{ trashed: number }>('/secrets/bulk', { body: { ids } }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Server-side ciphertext copy - attachments are not duplicated. */
+export function useBulkDuplicateSecrets() {
+  const invalidate = useInvalidateVault();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => api.post<{ created: number }>('/secrets/bulk/duplicate', { ids }),
+    onSuccess: invalidate,
+  });
+}
+
 /** Bulk create, used by `.env`/CSV import. Each entry is encrypted individually. */
 export function useImportSecrets() {
   const { encrypt } = useVault();

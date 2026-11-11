@@ -58,3 +58,27 @@ export function useDeleteFolder() {
     onSuccess: invalidate,
   });
 }
+
+/** Bulk reparent: `parentId: null` lifts the whole selection to top level. */
+export function useBulkMoveFolders() {
+  const invalidate = useInvalidateFolders();
+
+  return useMutation({
+    mutationFn: ({ ids, parentId }: { ids: string[]; parentId: string | null }) =>
+      api.patch<{ updated: number }>('/folders/bulk', { ids, parentId }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useBulkDeleteFolders() {
+  const invalidate = useInvalidateFolders();
+
+  return useMutation({
+    mutationFn: ({ ids, strategy }: { ids: string[]; strategy: 'detach' | 'delete-secrets' }) =>
+      api.delete<{ deleted: number; deletedSecrets: number; detachedFolders: number }>(
+        '/folders/bulk',
+        { body: { ids, strategy } },
+      ),
+    onSuccess: invalidate,
+  });
+}

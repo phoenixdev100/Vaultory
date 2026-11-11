@@ -239,7 +239,7 @@ docker-compose.yml  Self-hosted stack (db + api + web/nginx; api migrates at boo
 | `DIRECT_URL`                          | migrations  | Non-pooled connection for `prisma migrate`                                           |
 | `SESSION_SECRET`                      | yes         | ≥32 chars; HMAC key for session/reset tokens at rest                                 |
 | `VAULT_WRAP_SECRET`                   | yes         | ≥32 chars; server escrow keypair for reset recovery - rotating orphans escrowed keys |
-| `SESSION_TTL_DAYS`                    | no          | Session lifetime (default 30)                                                        |
+| `SESSION_TTL_DAYS`                    | no          | Session lifetime (default 7)                                                        |
 | `AUTO_LOCK_MINUTES`                   | no          | Default inactivity auto-lock for new accounts (0 = never, max 480)                   |
 | `CORS_ORIGINS`                        | no          | Comma-separated allowed browser origins                                              |
 | `CROSS_SITE_COOKIES`                  | no          | `true` when frontend+API are different sites (`SameSite=None;Secure`)                |

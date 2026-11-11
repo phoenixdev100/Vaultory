@@ -58,6 +58,29 @@ export const bulkCreateSecretsSchema = z.object({
   source: z.enum(['env-import', 'csv-import', 'backup-restore', 'manual']).default('manual'),
 });
 
+const bulkSecretIdsSchema = z.array(idSchema).min(1).max(200);
+
+/**
+ * Bulk metadata update. `folderId` undefined = keep current filing, null =
+ * unfile, id = move into that folder (validated against the destination
+ * workspace). `workspaceId` moves across the user's own organisations.
+ */
+export const bulkUpdateSecretsSchema = z
+  .object({
+    ids: bulkSecretIdsSchema,
+    folderId: idSchema.nullish(),
+    workspaceId: idSchema.optional(),
+    isFavorite: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.folderId !== undefined || value.workspaceId !== undefined || value.isFavorite !== undefined,
+    { error: 'Nothing to update.' },
+  );
+
+/** Shared id-list payload for bulk delete and duplicate. */
+export const bulkSecretActionSchema = z.object({ ids: bulkSecretIdsSchema });
+
 export const listSecretsQuerySchema = z.object({
   query: z.string().trim().max(200).optional(),
   category: categorySchema.optional(),

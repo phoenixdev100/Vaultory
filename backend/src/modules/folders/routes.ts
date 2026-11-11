@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { MAX_FOLDER_DEPTH, MAX_FOLDERS_PER_USER } from '../../config/constants.js';
 import { prisma } from '../../db/prisma.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { csrfGuard, getAuth, requireAuth, requireVerifiedEmail } from '../../middleware/auth.js';
 import { getWorkspaceId, workspaceScope } from '../../middleware/workspace.js';
 import { recordActivity } from '../../services/activity.js';
@@ -29,6 +30,19 @@ const updateFolderSchema = z
 
 /** Deleting a folder never silently destroys secrets: the caller must choose. */
 const deleteFolderQuerySchema = z.object({
+  strategy: z.enum(['detach', 'delete-secrets']).default('detach'),
+});
+
+const bulkFolderIdsSchema = z.array(z.string().uuid()).min(1).max(200);
+
+/** Bulk reparent: null moves everything to the top level. */
+const bulkMoveFoldersSchema = z.object({
+  ids: bulkFolderIdsSchema,
+  parentId: parentIdSchema,
+});
+
+const bulkDeleteFoldersSchema = z.object({
+  ids: bulkFolderIdsSchema,
   strategy: z.enum(['detach', 'delete-secrets']).default('detach'),
 });
 
@@ -88,6 +102,33 @@ async function deepestChildDepth(userId: string, workspaceId: string, folderId: 
     frontier = children.map((child) => child.id);
   }
   return depth;
+}
+
+/**
+ * Shared delete step for single and bulk folder removal. Children are lifted
+ * to the deleted folder's parent (the tree shape survives) and secrets either
+ * detach to "Unfiled" or are hard-deleted, per the caller's strategy. Runs
+ * inside the caller's transaction so a failure cannot strand partial state.
+ */
+async function applyFolderDelete(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  workspaceId: string,
+  folder: { id: string; parentId: string | null },
+  deleteSecrets: boolean,
+): Promise<number> {
+  let deletedSecrets = 0;
+  if (deleteSecrets) {
+    deletedSecrets = (
+      await tx.secret.deleteMany({ where: { userId, workspaceId, folderId: folder.id } })
+    ).count;
+  }
+  await tx.folder.updateMany({
+    where: { userId, workspaceId, parentId: folder.id },
+    data: { parentId: folder.parentId },
+  });
+  await tx.folder.delete({ where: { id: folder.id } });
+  return deletedSecrets;
 }
 
 export const foldersRouter = Router();
@@ -154,6 +195,103 @@ foldersRouter.post('/', async (req, res) => {
   });
 
   res.status(201).json({ folder: toFolderDto(folder) });
+});
+
+/**
+ * Bulk reparent. The target parent must be owned and outside the selection
+ * (moving a folder into another selected folder would depend on update order);
+ * every moved subtree is depth-checked like the single-folder move.
+ */
+foldersRouter.patch('/bulk', async (req, res) => {
+  const { user } = getAuth(req);
+  const workspaceId = getWorkspaceId(req);
+  const body = parseBody(bulkMoveFoldersSchema, req);
+
+  const folders = await prisma.folder.findMany({
+    where: { id: { in: body.ids }, userId: user.id, workspaceId },
+    select: { id: true, parentId: true },
+  });
+  if (folders.length === 0) throw ApiError.notFound('None of those folders are in this workspace.');
+
+  const moving = new Set(folders.map((folder) => folder.id));
+  const targetParentId = body.parentId ?? null;
+
+  if (targetParentId !== null) {
+    if (moving.has(targetParentId)) {
+      throw ApiError.badRequest('Folders cannot be moved inside the current selection.');
+    }
+    await requireOwnedFolder(user.id, workspaceId, targetParentId);
+    for (const folder of folders) {
+      const parentDepth = await ancestorDepth(user.id, workspaceId, targetParentId, folder.id);
+      if (parentDepth < 0) {
+        throw ApiError.badRequest('A folder cannot be moved inside itself or its own subfolder.');
+      }
+      const childDepth = await deepestChildDepth(user.id, workspaceId, folder.id);
+      if (parentDepth + 1 + childDepth > MAX_FOLDER_DEPTH) {
+        throw ApiError.badRequest(`That move would exceed the ${MAX_FOLDER_DEPTH}-level nesting limit.`);
+      }
+    }
+  }
+
+  const targets = folders.filter((folder) => folder.parentId !== targetParentId);
+  if (targets.length > 0) {
+    await prisma.folder.updateMany({
+      where: { id: { in: targets.map((folder) => folder.id) }, userId: user.id, workspaceId },
+      data: { parentId: targetParentId },
+    });
+  }
+
+  await recordActivity({
+    userId: user.id,
+    type: 'FOLDER_RENAMED',
+    targetType: 'folder',
+    targetLabel: `${targets.length} folder${targets.length === 1 ? '' : 's'} moved`,
+    req,
+  });
+
+  res.json({ updated: targets.length });
+});
+
+/**
+ * Bulk delete with the same detach/delete-secrets contract as the single
+ * route. Each folder lifts its children to its own parent before removal, so
+ * parent+child selections in any order stay consistent.
+ */
+foldersRouter.delete('/bulk', async (req, res) => {
+  const { user } = getAuth(req);
+  const workspaceId = getWorkspaceId(req);
+  const body = parseBody(bulkDeleteFoldersSchema, req);
+  const deleteSecrets = body.strategy === 'delete-secrets';
+
+  const folders = await prisma.folder.findMany({
+    where: { id: { in: body.ids }, userId: user.id, workspaceId },
+    include: { _count: { select: { secrets: { where: { deletedAt: null } }, children: true } } },
+  });
+  if (folders.length === 0) throw ApiError.notFound('None of those folders are in this workspace.');
+
+  const result = await prisma.$transaction(async (tx) => {
+    let deletedSecrets = 0;
+    let detachedFolders = 0;
+    for (const folder of folders) {
+      deletedSecrets += await applyFolderDelete(tx, user.id, workspaceId, folder, deleteSecrets);
+      detachedFolders += folder._count.children;
+    }
+    return { deletedSecrets, detachedFolders };
+  });
+
+  await recordActivity({
+    userId: user.id,
+    type: 'FOLDER_DELETED',
+    targetType: 'folder',
+    targetLabel: `${folders.length} folder${folders.length === 1 ? '' : 's'}`,
+    req,
+  });
+
+  res.json({
+    deleted: folders.length,
+    deletedSecrets: result.deletedSecrets,
+    detachedFolders: result.detachedFolders,
+  });
 });
 
 foldersRouter.patch('/:id', async (req, res) => {
@@ -232,20 +370,8 @@ foldersRouter.delete('/:id', async (req, res) => {
   // Secrets inside child folders keep their folder because children are
   // reparented, not deleted. All writes share one transaction so a failure
   // cannot strand secrets already deleted against a folder that survives.
-  const detachedFolders = folder._count.children;
   const deletedSecrets = await prisma.$transaction(async (tx) => {
-    let count = 0;
-    if (deleteSecrets) {
-      count = (
-        await tx.secret.deleteMany({ where: { userId: user.id, workspaceId, folderId: folder.id } })
-      ).count;
-    }
-    await tx.folder.updateMany({
-      where: { userId: user.id, workspaceId, parentId: folder.id },
-      data: { parentId: folder.parentId },
-    });
-    await tx.folder.delete({ where: { id: folder.id } });
-    return count;
+    return applyFolderDelete(tx, user.id, workspaceId, folder, deleteSecrets);
   });
 
   await recordActivity({
@@ -261,6 +387,6 @@ foldersRouter.delete('/:id', async (req, res) => {
     deleted: true,
     deletedSecrets,
     detachedSecrets: strategy === 'detach' ? folder._count.secrets : 0,
-    detachedFolders,
+    detachedFolders: folder._count.children,
   });
 });

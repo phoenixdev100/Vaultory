@@ -17,6 +17,7 @@ import {
   useToggleFavorite,
   type SecretFilters,
 } from '@/features/vault/queries';
+import { SecretBulkBar } from '@/features/vault/bulk-bar';
 import { SecretFiltersBar } from '@/features/vault/secret-filters';
 import { SecretGrid } from '@/features/vault/secret-grid';
 import { SecretList } from '@/features/vault/secret-list';
@@ -36,6 +37,7 @@ export default function VaultPage() {
   const [pendingDelete, setPendingDelete] = useState<DecryptedSecret | null>(null);
   const [subfolderOpen, setSubfolderOpen] = useState(false);
   const [viewMode, setViewMode] = useViewMode('vaultory.view.vault', 'list');
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
 
   const secrets = useSecrets(filters);
   const folders = useFolders();
@@ -45,6 +47,32 @@ export default function VaultPage() {
 
   const items = useMemo(() => secrets.data?.items ?? [], [secrets.data]);
   const folderItems = folders.data?.items ?? [];
+
+  // Selection helpers - ids are pruned to rows still on screen so a filter
+  // change can never leave phantom selections behind.
+  const selectedSecrets = useMemo(
+    () => items.filter((secret) => selectedIds.has(secret.id)),
+    [items, selectedIds],
+  );
+  const selection = useMemo(
+    () => ({
+      selected: selectedIds,
+      onToggle: (id: string) =>
+        setSelectedIds((current) => {
+          const next = new Set(current);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+        }),
+      onToggleAll: () =>
+        setSelectedIds((current) =>
+          items.every((secret) => current.has(secret.id))
+            ? new Set()
+            : new Set(items.map((secret) => secret.id)),
+        ),
+    }),
+    [selectedIds, items],
+  );
   // Inside a real folder (not the "no folder" bucket) the user is standing in a
   // folder context - offer making a subfolder right here.
   const currentFolder =
@@ -191,9 +219,21 @@ export default function VaultPage() {
             onToggleFavorite: handleFavorite,
             onMove: handleMove,
             onDelete: (secret: DecryptedSecret) => window.setTimeout(() => setPendingDelete(secret), 0),
+            selection,
             empty: emptyState,
           };
-          return viewMode === 'grid' ? <SecretGrid {...listProps} /> : <SecretList {...listProps} />;
+          return (
+            <>
+              {viewMode === 'grid' ? <SecretGrid {...listProps} /> : <SecretList {...listProps} />}
+              {selectedSecrets.length > 0 ? (
+                <SecretBulkBar
+                  secrets={selectedSecrets}
+                  folders={folderItems}
+                  onClear={() => setSelectedIds(new Set())}
+                />
+              ) : null}
+            </>
+          );
         })()
       )}
 

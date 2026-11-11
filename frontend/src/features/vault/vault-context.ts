@@ -1,7 +1,7 @@
 import { createContext, use } from 'react';
 import type { EncryptedPayload } from '@/lib/crypto/vault';
 
-export type LockReason = 'manual' | 'inactivity' | 'session';
+export type LockReason = 'manual' | 'inactivity' | 'session' | 'navigation' | 'unload';
 
 export interface VaultContextValue {
   locked: boolean;

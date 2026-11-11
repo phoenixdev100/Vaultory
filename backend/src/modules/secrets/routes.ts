@@ -14,6 +14,8 @@ import { ApiError } from '../../utils/http.js';
 import { parseBody, parseIdParam, parseQuery } from '../../utils/request.js';
 import {
   bulkCreateSecretsSchema,
+  bulkSecretActionSchema,
+  bulkUpdateSecretsSchema,
   createAttachmentSchema,
   createSecretSchema,
   listSecretsQuerySchema,
@@ -176,6 +178,127 @@ secretsRouter.post('/bulk', async (req, res) => {
   });
 
   res.status(201).json({ items: created.map(toSecretDto), created: created.length });
+});
+
+/**
+ * Bulk metadata update: refile, favourite-toggle and cross-workspace moves.
+ * Ciphertext is never touched - these are row-level fields only, so one
+ * updateMany covers the whole selection. Rows the user does not own in this
+ * workspace are silently skipped (count reflects what actually changed).
+ */
+secretsRouter.patch('/bulk', async (req, res) => {
+  const { user } = getAuth(req);
+  const workspaceId = getWorkspaceId(req);
+  const body = parseBody(bulkUpdateSecretsSchema, req);
+
+  let moveTarget: string | undefined;
+  if (body.workspaceId && body.workspaceId !== workspaceId) {
+    const target = await prisma.workspace.findFirst({
+      where: { id: body.workspaceId, userId: user.id },
+      select: { id: true },
+    });
+    if (!target) throw ApiError.notFound('That organisation does not exist.');
+    moveTarget = body.workspaceId;
+  }
+  const effectiveWorkspaceId = moveTarget ?? workspaceId;
+
+  // A destination folder is only valid inside the workspace the secrets end up in.
+  if (body.folderId) await assertFolderOwned(body.folderId, user.id, effectiveWorkspaceId);
+
+  const data: Prisma.SecretUncheckedUpdateManyInput = {};
+  if (body.isFavorite !== undefined) data.isFavorite = body.isFavorite;
+  // folderId changes only when explicitly sent, or implicitly detached on a
+  // cross-workspace move - folders never cross workspaces.
+  if (body.folderId !== undefined || moveTarget) data.folderId = body.folderId ?? null;
+  if (moveTarget) data.workspaceId = moveTarget;
+
+  const result = await prisma.secret.updateMany({
+    where: { id: { in: body.ids }, userId: user.id, workspaceId, deletedAt: null },
+    data,
+  });
+
+  if (moveTarget && result.count > 0) {
+    await prisma.attachment.updateMany({
+      where: { secretId: { in: body.ids }, userId: user.id, workspaceId },
+      data: { workspaceId: moveTarget },
+    });
+  }
+
+  await recordActivity({
+    userId: user.id,
+    type: 'SECRET_UPDATED',
+    targetType: 'secret',
+    targetLabel: `${result.count} item${result.count === 1 ? '' : 's'}`,
+    req,
+  });
+
+  res.json({ updated: result.count });
+});
+
+/** Bulk soft-delete: every selected row moves to the trash together. */
+secretsRouter.delete('/bulk', async (req, res) => {
+  const { user } = getAuth(req);
+  const workspaceId = getWorkspaceId(req);
+  const body = parseBody(bulkSecretActionSchema, req);
+
+  const result = await prisma.secret.updateMany({
+    where: { id: { in: body.ids }, userId: user.id, workspaceId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+
+  if (result.count > 0) {
+    await recordActivity({
+      userId: user.id,
+      type: 'SECRET_TRASHED',
+      targetType: 'secret',
+      targetLabel: `${result.count} item${result.count === 1 ? '' : 's'}`,
+      req,
+    });
+  }
+
+  res.json({ trashed: result.count });
+});
+
+/**
+ * Bulk duplicate. The server copies ciphertext rows verbatim - the vault key
+ * never leaves the browser, and copying an identical ciphertext+nonce pair is
+ * safe (no new encryption happens). Attachments are not copied.
+ */
+secretsRouter.post('/bulk/duplicate', async (req, res) => {
+  const { user } = getAuth(req);
+  const workspaceId = getWorkspaceId(req);
+  const body = parseBody(bulkSecretActionSchema, req);
+
+  const secrets = await prisma.secret.findMany({
+    where: { id: { in: body.ids }, userId: user.id, workspaceId, deletedAt: null },
+  });
+  if (secrets.length === 0) throw ApiError.notFound('None of those items are in your vault.');
+
+  const created = await prisma.secret.createMany({
+    data: secrets.map((secret) => ({
+      userId: user.id,
+      workspaceId: secret.workspaceId,
+      title: secret.title.length <= 192 ? `${secret.title} (copy)` : `${secret.title.slice(0, 192)}…`,
+      category: secret.category,
+      folderId: secret.folderId,
+      tags: secret.tags,
+      isFavorite: secret.isFavorite,
+      encVersion: secret.encVersion,
+      keyVersion: secret.keyVersion,
+      nonce: secret.nonce,
+      ciphertext: secret.ciphertext,
+    })),
+  });
+
+  await recordActivity({
+    userId: user.id,
+    type: 'SECRET_CREATED',
+    targetType: 'secret',
+    targetLabel: `${created.count} cop${created.count === 1 ? 'y' : 'ies'}`,
+    req,
+  });
+
+  res.status(201).json({ created: created.count });
 });
 
 /** Trash listing. Registered before /:id so "trash" is never parsed as an id. */

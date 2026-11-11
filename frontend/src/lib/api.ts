@@ -40,7 +40,7 @@ export function setCsrfToken(token: string | null): void {
  * restrictions).
  *
  * Stored in sessionStorage so it survives page refreshes but is automatically
- * cleared when the tab/browser is closed — a reasonable balance between UX
+ * cleared when the tab/browser is closed - a reasonable balance between UX
  * and security for a password manager.
  */
 const BEARER_TOKEN_KEY = 'vaultory.session_token';

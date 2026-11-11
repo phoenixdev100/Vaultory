@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     // Cross-site deployment: without a Bearer token in sessionStorage there is
-    // no session to restore — skip the network round-trip and go anonymous
+    // no session to restore - skip the network round-trip and go anonymous
     // immediately so public pages never fire a guaranteed-401 /auth/me call.
     if (!getBearerToken()) {
       setStatus('anonymous');

@@ -52,7 +52,7 @@ services:
       DIRECT_URL: postgresql://${POSTGRES_USER:-vaultory}:${POSTGRES_PASSWORD:-vaultory-local-postgres-password}@db:5432/${POSTGRES_DB:-vaultory}
       SESSION_SECRET: ${SESSION_SECRET:-vaultory-local-session-secret-for-dev-only}
       VAULT_WRAP_SECRET: ${VAULT_WRAP_SECRET:-vaultory-local-vault-wrap-secret-dev-only}
-      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-30}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
       AUTO_LOCK_MINUTES: ${AUTO_LOCK_MINUTES:-15}
       APP_URL: ${APP_URL:-http://localhost:5173}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
