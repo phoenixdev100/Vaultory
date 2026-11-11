@@ -991,16 +991,9 @@ describe('account TOTP two-factor', () => {
     const setCookie = complete.headers['set-cookie'];
     expect(Array.isArray(setCookie) ? setCookie.join(';') : String(setCookie)).toContain('vaultory_session=');
 
-    // One-session rule: the old seeded session is now revoked, so use the fresh
-    // cookie from the MFA login for subsequent requests.
-    const freshAgent = request.agent(app);
-    const freshCookie = Array.isArray(setCookie) ? setCookie[0] : String(setCookie);
-
     // Disable requires a live code too.
-    const disabled = await freshAgent
+    const disabled = await authed(user)
       .post('/api/auth/totp/disable')
-      .set('Cookie', freshCookie)
-      .set('X-CSRF-Token', complete.body.csrfToken)
       .send({ code: totpAt(secret, Date.now()) });
     expect(disabled.status).toBe(200);
 

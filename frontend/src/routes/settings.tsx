@@ -136,7 +136,7 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-5">
       <PageHeader title="Settings" description="Your account details and preferences." />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
@@ -172,63 +172,6 @@ export default function SettingsPage() {
           </Card>
 
           <VerifyEmailCard />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Change password</CardTitle>
-              <CardDescription>
-                Your vault key is re-wrapped with the new password - everything stays decryptable.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={submitPasswordChange} className="flex flex-col gap-4" noValidate>
-                <Field>
-                  <Label htmlFor="current-password">Current password</Label>
-                  <PasswordInput
-                    id="current-password"
-                    value={currentPassword}
-                    onChange={(event) => setCurrentPassword(event.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                </Field>
-                <Field>
-                  <Label htmlFor="new-password">New password</Label>
-                  <PasswordInput
-                    id="new-password"
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
-                  <PasswordStrength password={newPassword} />
-                </Field>
-                <Field>
-                  <Label htmlFor="confirm-password">Confirm new password</Label>
-                  <PasswordInput
-                    id="confirm-password"
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    autoComplete="new-password"
-                    required
-                  />
-                  <FieldError>{passwordError}</FieldError>
-                </Field>
-                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2.5">
-                  <span className="flex items-center gap-2 text-[13px] font-medium text-fg">
-                    <LogOut className="size-4 text-fg-subtle" />
-                    Sign out other sessions
-                  </span>
-                  <Switch checked={revokeOthersChoice} onCheckedChange={setRevokeOthersChoice} />
-                </label>
-                <div>
-                  <Button type="submit" loading={changePassword.isPending} disabled={currentPassword === ''}>
-                    Update password
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
@@ -293,6 +236,63 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Change password</CardTitle>
+              <CardDescription>
+                Your vault key is re-wrapped with the new password - everything stays decryptable.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={submitPasswordChange} className="flex flex-col gap-4" noValidate>
+                <Field>
+                  <Label htmlFor="current-password">Current password</Label>
+                  <PasswordInput
+                    id="current-password"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </Field>
+                <Field>
+                  <Label htmlFor="new-password">New password</Label>
+                  <PasswordInput
+                    id="new-password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <PasswordStrength password={newPassword} />
+                </Field>
+                <Field>
+                  <Label htmlFor="confirm-password">Confirm new password</Label>
+                  <PasswordInput
+                    id="confirm-password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <FieldError>{passwordError}</FieldError>
+                </Field>
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-control)] border border-line px-3 py-2.5">
+                  <span className="flex items-center gap-2 text-[13px] font-medium text-fg">
+                    <LogOut className="size-4 text-fg-subtle" />
+                    Sign out other sessions
+                  </span>
+                  <Switch checked={revokeOthersChoice} onCheckedChange={setRevokeOthersChoice} />
+                </label>
+                <div>
+                  <Button type="submit" loading={changePassword.isPending} disabled={currentPassword === ''}>
+                    Update password
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
           <Card className="border-danger/30">
             <CardHeader>
               <CardTitle className="text-danger">Danger zone</CardTitle>

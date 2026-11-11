@@ -169,8 +169,6 @@ authRouter.post(
 
     const issued = await createSession(user.id, req);
     setSessionCookie(res, issued);
-    // One-session rule: revoke all other sessions for this account.
-    await revokeOtherSessions(user.id, issued.session.id);
     await recordActivity({ userId: user.id, type: 'SIGNUP', targetType: 'account', req });
 
     // No verification OTP at signup: the account lands on the verify wall and
@@ -237,8 +235,6 @@ authRouter.post(
 
     const issued = await createSession(user.id, req);
     setSessionCookie(res, issued);
-    // One-session rule: revoke all other sessions for this account.
-    await revokeOtherSessions(user.id, issued.session.id);
     await recordActivity({ userId: user.id, type: 'LOGIN', targetType: 'account', req });
 
     res.json({ user: toUserDto(user), csrfToken: issued.csrfToken, sessionToken: issued.token });
@@ -291,8 +287,6 @@ authRouter.post(
 
     const issued = await createSession(user.id, req);
     setSessionCookie(res, issued);
-    // One-session rule: revoke all other sessions for this account.
-    await revokeOtherSessions(user.id, issued.session.id);
     await recordActivity({ userId: user.id, type: 'LOGIN', targetType: 'account', req });
 
     res.json({ user: toUserDto(user), csrfToken: issued.csrfToken, sessionToken: issued.token });
