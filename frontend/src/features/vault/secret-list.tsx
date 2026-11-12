@@ -9,8 +9,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SkeletonRows } from '@/components/ui/skeleton';
@@ -271,27 +273,31 @@ export function SecretList({
                         </DropdownMenuItem>
 
                         {onMove ? (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel>Move to folder</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              onSelect={() => onMove(secret, null)}
-                              className={cn(!secret.folderId && 'text-primary')}
-                            >
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
                               <FolderInput />
-                              No folder
-                            </DropdownMenuItem>
-                            {flatFolders.map(({ folder }) => (
+                              Move to folder
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
                               <DropdownMenuItem
-                                key={folder.id}
-                                onSelect={() => onMove(secret, folder.id)}
-                                className={cn(secret.folderId === folder.id && 'text-primary')}
+                                onSelect={() => onMove(secret, null)}
+                                className={cn(!secret.folderId && 'text-primary')}
                               >
                                 <FolderInput />
-                                {folderPath(folder, folderById)}
+                                No folder
                               </DropdownMenuItem>
-                            ))}
-                          </>
+                              {flatFolders.map(({ folder }) => (
+                                <DropdownMenuItem
+                                  key={folder.id}
+                                  onSelect={() => onMove(secret, folder.id)}
+                                  className={cn(secret.folderId === folder.id && 'text-primary')}
+                                >
+                                  <FolderInput />
+                                  {folderPath(folder, folderById)}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
                         ) : null}
 
                         {onDelete ? (

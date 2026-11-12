@@ -23,8 +23,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -190,36 +192,42 @@ export default function SecretDetailPage() {
                   {item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Move to folder</DropdownMenuLabel>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    moveSecret.mutate(
-                      { id: item.id, folderId: null },
-                      { onError: () => toast.error('Could not move that item') },
-                    )
-                  }
-                >
-                  <FolderInput />
-                  No folder
-                </DropdownMenuItem>
-                {(folders.data?.items ?? []).map((entry) => (
-                  <DropdownMenuItem
-                    key={entry.id}
-                    onSelect={() =>
-                      moveSecret.mutate(
-                        { id: item.id, folderId: entry.id },
-                        {
-                          onSuccess: () => toast.success(`Moved to “${entry.name}”`),
-                          onError: () => toast.error('Could not move that item'),
-                        },
-                      )
-                    }
-                  >
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
                     <FolderInput />
-                    {entry.name}
-                  </DropdownMenuItem>
-                ))}
+                    Move to folder
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        moveSecret.mutate(
+                          { id: item.id, folderId: null },
+                          { onError: () => toast.error('Could not move that item') },
+                        )
+                      }
+                    >
+                      <FolderInput />
+                      No folder
+                    </DropdownMenuItem>
+                    {(folders.data?.items ?? []).map((entry) => (
+                      <DropdownMenuItem
+                        key={entry.id}
+                        onSelect={() =>
+                          moveSecret.mutate(
+                            { id: item.id, folderId: entry.id },
+                            {
+                              onSuccess: () => toast.success(`Moved to “${entry.name}”`),
+                              onError: () => toast.error('Could not move that item'),
+                            },
+                          )
+                        }
+                      >
+                        <FolderInput />
+                        {entry.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

@@ -1,15 +1,58 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { ChevronRight } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export const DropdownMenuGroup = DropdownMenuPrimitive.Group;
+export const DropdownMenuSub = DropdownMenuPrimitive.Sub;
+
+export function DropdownMenuSubTrigger({
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.SubTrigger>) {
+  return (
+    <DropdownMenuPrimitive.SubTrigger
+      className={cn(
+        'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-fg outline-none select-none',
+        'data-highlighted:bg-surface-muted data-[state=open]:bg-surface-muted data-disabled:pointer-events-none data-disabled:opacity-50',
+        '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-subtle',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRight className="ml-auto size-4 text-fg-subtle" />
+    </DropdownMenuPrimitive.SubTrigger>
+  );
+}
+
+export function DropdownMenuSubContent({
+  className,
+  collisionPadding = 8,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.SubContent
+        collisionPadding={collisionPadding}
+        className={cn(
+          'vt-pop z-50 min-w-48 max-h-[var(--radix-dropdown-menu-content-available-height,calc(100vh-2rem))] overflow-y-auto overflow-x-hidden rounded-[var(--radius-control)] border border-line bg-elevated p-1 shadow-pop',
+          className,
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  );
+}
 
 export function DropdownMenuContent({
   className,
   align = 'end',
   sideOffset = 6,
+  collisionPadding = 8,
   ...props
 }: ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   return (
@@ -17,8 +60,9 @@ export function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         align={align}
         sideOffset={sideOffset}
+        collisionPadding={collisionPadding}
         className={cn(
-          'vt-pop z-50 min-w-48 overflow-hidden rounded-[var(--radius-control)] border border-line bg-elevated p-1 shadow-pop',
+          'vt-pop z-50 min-w-48 max-h-[var(--radix-dropdown-menu-content-available-height,calc(100vh-2rem))] overflow-y-auto overflow-x-hidden rounded-[var(--radius-control)] border border-line bg-elevated p-1 shadow-pop',
           className,
         )}
         {...props}

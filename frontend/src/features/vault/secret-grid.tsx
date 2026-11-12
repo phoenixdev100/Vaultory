@@ -9,8 +9,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -199,27 +201,31 @@ export function SecretGrid({
                     </DropdownMenuItem>
 
                     {onMove ? (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel>Move to folder</DropdownMenuLabel>
-                        <DropdownMenuItem
-                          onSelect={() => onMove(secret, null)}
-                          className={cn(!secret.folderId && 'text-primary')}
-                        >
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
                           <FolderInput />
-                          No folder
-                        </DropdownMenuItem>
-                        {flatFolders.map(({ folder: f }) => (
+                          Move to folder
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
                           <DropdownMenuItem
-                            key={f.id}
-                            onSelect={() => onMove(secret, f.id)}
-                            className={cn(secret.folderId === f.id && 'text-primary')}
+                            onSelect={() => onMove(secret, null)}
+                            className={cn(!secret.folderId && 'text-primary')}
                           >
                             <FolderInput />
-                            {folderPath(f, folderById)}
+                            No folder
                           </DropdownMenuItem>
-                        ))}
-                      </>
+                          {flatFolders.map(({ folder: f }) => (
+                            <DropdownMenuItem
+                              key={f.id}
+                              onSelect={() => onMove(secret, f.id)}
+                              className={cn(secret.folderId === f.id && 'text-primary')}
+                            >
+                              <FolderInput />
+                              {folderPath(f, folderById)}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
                     ) : null}
 
                     {onDelete ? (
