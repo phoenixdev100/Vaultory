@@ -15,3 +15,5 @@ Disallow: /trash
 Disallow: /audit
 Disallow: /activity
 Disallow: /sharing
+
+Sitemap: https://vaultory-phoenixdev100.vercel.app/sitemap.xml

@@ -46,7 +46,7 @@ export function createApp(): Express {
     helmet({
       // JSON API: a restrictive CSP belongs on the frontend deployment.
       contentSecurityPolicy: false,
-      crossOriginResourcePolicy: { policy: 'same-site' },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       referrerPolicy: { policy: 'no-referrer' },
     }),
   );
@@ -62,7 +62,7 @@ export function createApp(): Express {
         callback(null, false);
       },
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization', 'X-Workspace-Id'],
       maxAge: 600,
     }),
